@@ -13,6 +13,9 @@ interface User {
   name: string;
   email: string;
   password: string;
+  username: string;
+  About ?:string;
+  profilePic?:string;
 }
 
 interface JwtPayload {
@@ -21,17 +24,17 @@ interface JwtPayload {
 
 // SIGNUP
 app.post("/api/auth/signup", async (req: any, res: any) => {
-  const { name, email, password } = req.body as User;
+  const { name,username, email, password } = req.body as User;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return res.status(400).json({ message: "Email already exists" });
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword },
+    data: { name,username ,  email, password: hashedPassword},
   });
 
-  res.json({ message: "User created", user: { id: user.id, email: user.email } });
+  res.json({ message: "User created", user: { id: user.id, email: user.email , username:user.username } , });
 });
 
 // LOGIN
@@ -59,7 +62,7 @@ app.get("/api/auth/me", async (req: any, res: any) => {
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) return res.status(404).json({ message: "User not found" });
     
-    res.json({ user: { id: user.id, email: user.email } });
+    res.json({ user: { id: user.id, email: user.email , username: user.username ,name:user.name, about:user.about , profilePic:user.profilePic } });
   } catch (err) {
     res.status(401).json({ message: "Invalid token" });
   }
