@@ -1,18 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  username   String   @unique
+  profilePic String?
+  About      String?
+  email      String   @unique
+  password   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  sentMessages     Message[]      @relation("MessageSender")
+  receivedMessages Message[]      @relation("MessageReceiver")
+  ChatRoomUser     ChatRoomUser[]
+  UserSession      UserSession?
+
+  @@map("users")
 }
 
-model User {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  username String   @unique
-  profilePic String?
-  About   String?
-  email    String @unique
-  password String
+model Message {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  roomId      String // room:user1:user2 (sorted)
+  senderId    String   @db.ObjectId
+  receiverId  String   @db.ObjectId
+  content     String
+  messageType String   @default("text") // text, image, file, voice
+  timestamp   DateTime @default(now())
+  status      String   @default("sent") // sent, delivered, read
+
+  // Relations
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([timestamp])
+  @@map("messages")
+}
+
+model ChatRoom {
+  roomId       String         @id @map("_id") // room:user1:user2 (sorted)
+  lastActivity DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  ChatRoomUser ChatRoomUser[]
+
+  @@map("chat_rooms")
+}
+
+model ChatRoomUser {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  roomId   String
+  joinedAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id])
+  room ChatRoom @relation(fields: [roomId], references: [roomId])
+
+  @@unique([userId, roomId])
+  @@map("chat_room_users")
+}
+
+model UserSession {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @unique @db.ObjectId
+  socketId String?
+  isOnline Boolean  @default(false)
+  lastSeen DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_sessions")
 }

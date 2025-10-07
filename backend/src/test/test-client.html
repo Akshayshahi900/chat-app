@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.io Chat Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Chat Test Client</h1>
+    
+    <div>
+        <h3>Connection</h3>
+        <input type="text" id="tokenInput" placeholder="JWT Token" style="width: 400px;">
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <p id="status">Disconnected</p>
+    </div>
+
+    <div>
+        <h3>Search User</h3>
+        <input type="text" id="searchInput" placeholder="Username to search">
+        <button onclick="searchUser()">Search</button>
+        <div id="searchResults"></div>
+    </div>
+
+    <div>
+        <h3>Send Message</h3>
+        <input type="text" id="receiverId" placeholder="Receiver User ID">
+        <input type="text" id="messageInput" placeholder="Your message">
+        <button onclick="sendMessage()">Send Message</button>
+    </div>
+
+    <div>
+        <h3>Messages</h3>
+        <div id="messages" style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px;"></div>
+    </div>
+
+    <div>
+        <h3>Online Users</h3>
+        <div id="onlineUsers"></div>
+    </div>
+
+    <script>
+        let socket = null;
+
+        function connect() {
+            const token = document.getElementById('tokenInput').value;
+            
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+
+            socket = io('http://localhost:5000', {
+                auth: {
+                    token: token
+                }
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('status').textContent = 'Connected';
+                document.getElementById('status').style.color = 'green';
+                logMessage('System: Connected to server');
+            });
+
+            socket.on('disconnect', () => {
+                document.getElementById('status').textContent = 'Disconnected';
+                document.getElementById('status').style.color = 'red';
+                logMessage('System: Disconnected from server');
+            });
+
+            // Listen for messages
+            socket.on('message:received', (message) => {
+                logMessage(`${message.sender.username}: ${message.content}`);
+            });
+
+            // Listen for user search results
+            socket.on('user:found', (user) => {
+                document.getElementById('searchResults').innerHTML = `
+                    <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
+                        <strong>${user.name}</strong> (@${user.username})<br>
+                        <small>ID: ${user.id}</small>
+                        <button onclick="setReceiverId('${user.id}')">Chat</button>
+                    </div>
+                `;
+            });
+
+            socket.on('user:not_found', () => {
+                document.getElementById('searchResults').innerHTML = 'User not found';
+            });
+
+            // Online/offline status
+            socket.on('user:online', (data) => {
+                logMessage(`System: ${data.username} is online`);
+                updateOnlineUser(data.userId, data.username, true);
+            });
+
+            socket.on('user:offline', (data) => {
+                logMessage(`System: ${data.username} went offline`);
+                updateOnlineUser(data.userId, data.username, false);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function searchUser() {
+            const username = document.getElementById('searchInput').value;
+            if (socket && username) {
+                socket.emit('user:search', { username });
+            }
+        }
+
+        function sendMessage() {
+            const receiverId = document.getElementById('receiverId').value;
+            const message = document.getElementById('messageInput').value;
+            
+            if (socket && receiverId && message) {
+                socket.emit('message:send', {
+                    receiverId: receiverId,
+                    content: message
+                });
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        function setReceiverId(userId) {
+            document.getElementById('receiverId').value = userId;
+        }
+
+        function logMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${text}</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateOnlineUser(userId, username, isOnline) {
+            const onlineUsersDiv = document.getElementById('onlineUsers');
+            const userElement = document.getElementById(`user-${userId}`);
+            
+            if (userElement) {
+                userElement.style.color = isOnline ? 'green' : 'red';
+                userElement.textContent = `${username} (${isOnline ? 'online' : 'offline'})`;
+            } else {
+                onlineUsersDiv.innerHTML += `
+                    <div id="user-${userId}" style="color: ${isOnline ? 'green' : 'red'}">
+                        ${username} (${isOnline ? 'online' : 'offline'})
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
