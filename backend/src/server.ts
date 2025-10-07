@@ -1,71 +1,45 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const { PrismaClient } = require("@prisma/client");
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import cors from "cors";
+import { PrismaClient } from "@prisma/client";
+import { Server } from "socket.io";
+import { verifyAuth } from "./middleware/verifyAuth";
+import authRoutes from "./routes/auth.routes";
+import dotenv from "dotenv";
 
-const prisma = new PrismaClient();
+dotenv.config();
+
 const app = express();
+const prisma = new PrismaClient();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-interface User {
-  name: string;
-  email: string;
-  password: string;
-  username: string;
-  About ?:string;
-  profilePic?:string;
-}
+// Routes
+app.use('/api/auth', authRoutes);
 
-interface JwtPayload {
-  id: number;
-}
-
-// SIGNUP
-app.post("/api/auth/signup", async (req: any, res: any) => {
-  const { name,username, email, password } = req.body as User;
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return res.status(400).json({ message: "Email already exists" });
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { name,username ,  email, password: hashedPassword},
-  });
-
-  res.json({ message: "User created", user: { id: user.id, email: user.email , username:user.username } , });
+// Health check route
+app.get("/api/health", (req: express.Request, res: express.Response) => {
+  res.json({ message: "Server is running", timestamp: new Date().toISOString() });
 });
 
-// LOGIN
-app.post("/api/auth/login", async (req: any, res: any) => {
-  const { email, password } = req.body as Pick<User, "email" | "password">;
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return res.status(400).json({ message: "Invalid credentials" });
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-
-  const token = jwt.sign({ id: user.id }, "secret123", { expiresIn: "7d" });
-  res.json({ token, user: { id: user.id, email: user.email } });
+// Error handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Something went wrong!" });
 });
 
-// PROTECTED ROUTE
-app.get("/api/auth/me", async (req: any, res: any) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: "No token" });
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, "secret123") as JwtPayload;
-    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    
-    res.json({ user: { id: user.id, email: user.email , username: user.username ,name:user.name, about:user.about , profilePic:user.profilePic } });
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
-  }
+// 404 handler
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
-app.listen(5000, () => console.log("✅ Server running on http://localhost:5000"));
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
+
+export default app;
