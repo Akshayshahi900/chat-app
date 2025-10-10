@@ -25,6 +25,7 @@ export default function LoginPage() {
       if (res.ok) {
         localStorage.setItem("token", data.token);
         console.log("Login successful:", data);
+        console.log(` token is ${data.token}`);
         
         // Redirect to profile page (you can change this to /chat later)
         router.push("/profile");

@@ -20,9 +20,9 @@ export default function RootLayout({
    <html lang="en" className="antialiased" suppressHydrationWarning>
          <body className="min-h-screen bg-background text-foreground">
         <Suspense fallback={<div>Loading...</div>}>
-          <SiteHeader />
+          
           <main className="min-h-[80svh]">{children}</main>
-          <SiteFooter />
+        
         </Suspense>
       
       </body>
