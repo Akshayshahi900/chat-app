@@ -169,7 +169,7 @@ export default function ChatApp() {
   return (<>
     <div className="flex h-screen bg-gray-900">
       {/* Left Sidebar */}
-      <div className="w-auto bg-white border-r border-gray-300 flex flex-col ">
+      <div className="w-1/3 bg-white border-r border-gray-300 flex flex-col ">
         {/* Header */}
         <div className="p-4 border-b border-gray-300">
           <div className="flex items-center justify-between mb-4">

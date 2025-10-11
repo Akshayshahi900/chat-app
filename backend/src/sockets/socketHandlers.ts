@@ -6,12 +6,13 @@ import {
   InterServerEvents,
   SocketData
 } from '../types/socket';
+import { CLIENT_RENEG_WINDOW } from 'tls';
 
 export const setupSocketHandlers = (
   io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
   prisma: PrismaClient
 ) => {
-  
+
   // Simple online users storage
   const onlineUsers = new Map<string, string>(); // userId -> socketId
 
@@ -28,102 +29,139 @@ export const setupSocketHandlers = (
     socket.broadcast.emit('user:online', { userId, username });
 
     // 🔍 USER SEARCH
-   // 🔍 USER SEARCH
-socket.on('user:search', async (data) => {
-  try {
-    console.log(`🔍 ${username} searching for: ${data.username}`);
-    
-    const foundUser = await prisma.user.findUnique({
-      where: { username: data.username },
-      select: { 
-        id: true, 
-        name: true, 
-        username: true, 
-        profilePic: true, 
-        About: true 
-      }
-    });
+    // 🔍 USER SEARCH
+    socket.on('user:search', async (data) => {
+      try {
+        console.log(`🔍 ${username} searching for: ${data.username}`);
 
-    if (foundUser && foundUser.id !== userId) {
-      // Type assertion to SimpleUser
-      socket.emit('user:found', foundUser as SimpleUser);
-    } else {
-      socket.emit('user:not_found');
-    }
-  } catch (error) {
-    console.error('Search error:', error);
-    socket.emit('user:not_found');
-  }
-});
-
-    // 💬 SEND MESSAGE (THE CORE FEATURE)
-  // 💬 SEND MESSAGE (THE CORE FEATURE)
-socket.on('message:send', async (data) => {
-  try {
-    console.log(`📨 ${username} to ${data.receiverId}: ${data.content}`);
-    
-    // Create room ID (sorted to ensure consistency)
-    const sortedIds = [userId, data.receiverId].sort();
-    const roomId = `room:${sortedIds[0]}:${sortedIds[1]}`;
-
-    // Ensure room exists
-    await prisma.chatRoom.upsert({
-      where: { roomId },
-      update: { lastActivity: new Date() },
-      create: { roomId }
-    });
-
-    // Save message to database
-    const message = await prisma.message.create({
-      data: {
-        roomId,
-        senderId: userId,
-        receiverId: data.receiverId,
-        content: data.content,
-        messageType: 'text'
-      },
-      include: {
-        sender: {
-          select: { 
-            id: true, 
-            name: true, 
-            username: true, 
+        const foundUser = await prisma.user.findUnique({
+          where: { username: data.username },
+          select: {
+            id: true,
+            name: true,
+            username: true,
             profilePic: true,
             About: true
           }
+        });
+
+        if (foundUser && foundUser.id !== userId) {
+          // Type assertion to SimpleUser
+          socket.emit('user:found', foundUser as SimpleUser);
+        } else {
+          socket.emit('user:not_found');
         }
+      } catch (error) {
+        console.error('Search error:', error);
+        socket.emit('user:not_found');
       }
     });
 
-    // Create simple message object for socket emission
-    const simpleMessage = {
-      id: message.id,
-      roomId: message.roomId,
-      senderId: message.senderId,
-      receiverId: message.receiverId,
-      content: message.content,
-      messageType: message.messageType,
-      timestamp: message.timestamp,
-      sender: message.sender
-    };
+    // 💬 SEND MESSAGE (THE CORE FEATURE)
+    // 💬 SEND MESSAGE (THE CORE FEATURE)
+    socket.on('message:send', async (data) => {
+      try {
+        console.log(`📨 ${username} to ${data.receiverId}: ${data.content}`);
 
-    // Check if receiver is online
-    const receiverSocketId = onlineUsers.get(data.receiverId);
-    
-    if (receiverSocketId) {
-      // Send to receiver
-      io.to(receiverSocketId).emit('message:received', simpleMessage);
-    }
-    
-    // Also send back to sender (so they see their own message)
-    socket.emit('message:received', simpleMessage);
+        // Create room ID (sorted to ensure consistency)
+        const sortedIds = [userId, data.receiverId].sort();
+        const roomId = `room:${sortedIds[0]}:${sortedIds[1]}`;
 
-    console.log(`✅ Message saved and delivered`);
+        // Ensure room exists AND users are added to ChatRoomUser
 
-  } catch (error) {
-    console.error('Message send error:', error);
-  }
-});
+        await prisma.chatRoom.upsert({
+          where: { roomId },
+          update: { lastActivity: new Date() },
+          create: { roomId }
+        });
+
+        try {
+          await prisma.chatRoomUser.createMany({
+            data: [
+              { userId: userId, roomId },
+              { userId: data.receiverId, roomId }
+            ],
+            skipDuplicates: true,
+          });
+          console.log(`added user to room:${roomId}`);
+        } catch (userError) {
+          console.log('Users already in room (this is fine');
+        }
+
+        async function ensureChatRoomUsers(roomId: string, user1Id: string, user2Id: string) {
+          try {
+            //check if users are already in the room
+            const existingUsers = await prisma.chatRoomUser.findMany({
+              where:{roomId}
+            })
+
+            const existingUserIds = existingUsers.map(u =>userId);
+            const usersToAdd = [user1Id , user2Id].filter(id => !existingUserIds.includes(id));
+
+            if(usersToAdd.length > 0 ){
+              await prisma.chatRoomUser.createMany({
+                data: usersToAdd.map(userId=>({
+                  userId , 
+                  roomId
+                }))
+              });
+              console.log(`Added ${usersToAdd.length} users to room ${roomId}`);
+            }
+          } catch (error) {
+            console.error('Error ensuring ChatRoomUsers:', error);
+          }
+        }
+        // Save message to database
+        const message = await prisma.message.create({
+          data: {
+            roomId,
+            senderId: userId,
+            receiverId: data.receiverId,
+            content: data.content,
+            messageType: 'text'
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                profilePic: true,
+                About: true
+              }
+            }
+          }
+        });
+
+        // Create simple message object for socket emission
+        const simpleMessage = {
+          id: message.id,
+          roomId: message.roomId,
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          content: message.content,
+          messageType: message.messageType,
+          timestamp: message.timestamp,
+          sender: message.sender
+        };
+
+        // Check if receiver is online
+        const receiverSocketId = onlineUsers.get(data.receiverId);
+
+        if (receiverSocketId) {
+          // Send to receiver
+          io.to(receiverSocketId).emit('message:received', simpleMessage);
+        }
+
+        // Also send back to sender (so they see their own message)
+        socket.emit('message:received', simpleMessage);
+
+        console.log(`✅ Message saved and delivered`);
+
+      } catch (error) {
+        console.error('Message send error:', error);
+      }
+    });
 
     // 🚪 JOIN ROOM (for receiving messages)
     socket.on('room:join', (data) => {
