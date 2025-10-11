@@ -169,12 +169,12 @@ export default function ChatApp() {
   return (<>
     <div className="flex h-screen bg-gray-900">
       {/* Left Sidebar */}
-      <div className="w-1/3 bg-white border-r border-gray-300 flex flex-col">
+      <div className="w-auto bg-white border-r border-gray-300 flex flex-col ">
         {/* Header */}
         <div className="p-4 border-b border-gray-300">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold">Messages</h1>
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <h1 className="text-xl font-semibold">Zing</h1>
+            {/* <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div> */}
           </div>
 
           {/* Token Input
@@ -281,7 +281,7 @@ export default function ChatApp() {
 
           {chats.length === 0 && (
             <div className="text-center text-gray-500 mt-8">
-              No chats yet. Search for users to start chatting!
+              No chats yet
             </div>
           )}
         </div>

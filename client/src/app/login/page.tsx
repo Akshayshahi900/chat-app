@@ -28,7 +28,7 @@ export default function LoginPage() {
         console.log(` token is ${data.token}`);
         
         // Redirect to profile page (you can change this to /chat later)
-        router.push("/profile");
+        router.push("/chat");
       } else {
         console.error("Login failed:", data.message);
         alert(data.message || "Login failed");
