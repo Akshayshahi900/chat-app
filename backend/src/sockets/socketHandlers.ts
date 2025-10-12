@@ -9,7 +9,6 @@ import {
   SimpleMessage,
 
 } from '../types/socket';
-import { CLIENT_RENEG_WINDOW } from 'tls';
 
 export const setupSocketHandlers = (
   io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
@@ -83,8 +82,8 @@ export const setupSocketHandlers = (
             data: [
               { userId: userId, roomId },
               { userId: data.receiverId, roomId }
-            ],
-            skipDuplicates: true,
+            ]
+            // skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
           });
           console.log(`added user to room:${roomId}`);
         } catch (userError) {
@@ -137,16 +136,20 @@ export const setupSocketHandlers = (
         });
 
         // Create simple message object for socket emission
-        // const simpleMessage = {
-        //   id: message.id,
-        //   roomId: message.roomId,
-        //   senderId: message.senderId,
-        //   receiverId: message.receiverId,
-        //   content: message.content,
-        //   messageType: message.messageType,
-        //   timestamp: message.timestamp,
-        //   sender: message.sender
-        // };
+        const simpleMessage: SimpleMessage = {
+          id: message.id,
+          roomId: message.roomId,
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          content: message.content,
+          messageType: message.messageType,
+          timestamp: message.timestamp,
+          sender:{
+            ...message.sender,
+            profilePic:message.sender.profilePic ??undefined,
+            About:message.sender.About ?? undefined,
+          },
+        };
 
         // Check if receiver is online
         const receiverSocketId = onlineUsers.get(data.receiverId);
