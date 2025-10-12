@@ -4,7 +4,10 @@ import {
   ClientToServerEvents,
   ServerToClientEvents,
   InterServerEvents,
-  SocketData
+  SocketData,
+  SimpleUser,
+  SimpleMessage,
+
 } from '../types/socket';
 import { CLIENT_RENEG_WINDOW } from 'tls';
 
@@ -134,16 +137,16 @@ export const setupSocketHandlers = (
         });
 
         // Create simple message object for socket emission
-        const simpleMessage = {
-          id: message.id,
-          roomId: message.roomId,
-          senderId: message.senderId,
-          receiverId: message.receiverId,
-          content: message.content,
-          messageType: message.messageType,
-          timestamp: message.timestamp,
-          sender: message.sender
-        };
+        // const simpleMessage = {
+        //   id: message.id,
+        //   roomId: message.roomId,
+        //   senderId: message.senderId,
+        //   receiverId: message.receiverId,
+        //   content: message.content,
+        //   messageType: message.messageType,
+        //   timestamp: message.timestamp,
+        //   sender: message.sender
+        // };
 
         // Check if receiver is online
         const receiverSocketId = onlineUsers.get(data.receiverId);

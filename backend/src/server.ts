@@ -10,7 +10,7 @@ import {
   ServerToClientEvents, 
   SocketData, 
   InterServerEvents 
-} from "./types/socket";
+} from "../src/types/socket";
 import { socketAuth } from "./middleware/socketAuth";
 import { setupSocketHandlers } from "./sockets/socketHandlers";
 
