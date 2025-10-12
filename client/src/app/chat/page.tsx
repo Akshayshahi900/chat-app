@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useEffectEvent, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
 interface User {
@@ -33,12 +33,14 @@ export default function ChatApp() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [foundUsers, setFoundUsers] = useState<User[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -163,36 +165,15 @@ export default function ChatApp() {
     }
   };
 
-
-
-  // JSX same as before...
-  return (<>
+  return (
     <div className="flex h-screen bg-gray-900">
       {/* Left Sidebar */}
-      <div className="w-1/3 bg-white border-r border-gray-300 flex flex-col ">
+      <div className="w-1/3 bg-white border-r border-gray-300 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-300">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold">Zing</h1>
-            {/* <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div> */}
           </div>
-
-          {/* Token Input
-          <div className="mb-4">
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Enter JWT Token"
-              className="w-full p-2 border border-gray-300 rounded text-sm"
-            />
-            <button
-              onClick={connectSocket}
-              className="w-full mt-2 bg-green-500 text-white py-2 rounded hover:bg-green-600"
-            >
-              {isConnected ? 'Connected' : 'Connect'}
-            </button>
-          </div> */}
 
           {/* Search Bar */}
           <div className="flex gap-2">
@@ -243,8 +224,9 @@ export default function ChatApp() {
           {chats.map(chat => (
             <div
               key={chat.user.id}
-              className={`flex items-center p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedChat?.user.id === chat.user.id ? 'bg-blue-50' : ''
-                }`}
+              className={`flex items-center p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                selectedChat?.user.id === chat.user.id ? 'bg-blue-50' : ''
+              }`}
               onClick={() => setSelectedChat(chat)}
             >
               <div className="relative">
@@ -320,17 +302,19 @@ export default function ChatApp() {
                       className={`flex ${message.senderId === selectedChat.user.id ? 'justify-start' : 'justify-end'}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.senderId === selectedChat.user.id
-                          ? 'bg-white border border-gray-200'
-                          : 'bg-blue-500 text-white'
-                          }`}
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.senderId === selectedChat.user.id
+                            ? 'bg-white border border-gray-200'
+                            : 'bg-blue-500 text-white'
+                        }`}
                       >
                         <p>{message.content}</p>
                         <p
-                          className={`text-xs mt-1 ${message.senderId === selectedChat.user.id
-                            ? 'text-gray-500'
-                            : 'text-blue-100'
-                            }`}
+                          className={`text-xs mt-1 ${
+                            message.senderId === selectedChat.user.id
+                              ? 'text-gray-500'
+                              : 'text-blue-100'
+                          }`}
                         >
                           {new Date(message.timestamp).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -383,6 +367,5 @@ export default function ChatApp() {
         )}
       </div>
     </div>
-
-  </>)
+  );
 }

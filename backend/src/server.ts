@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import authRoutes from "./routes/auth.routes";
+import chatRoutes from "./routes/chat.routes";
 import { CORS_OPTIONS } from "./utils/constants";
 import { 
   ClientToServerEvents, 
@@ -41,6 +42,7 @@ app.use(cors(CORS_OPTIONS));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/chats' , chatRoutes);
 
 // Health check route
 app.get("/api/health", (req: express.Request, res: express.Response) => {
