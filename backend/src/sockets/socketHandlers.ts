@@ -59,6 +59,31 @@ export const setupSocketHandlers = (
       }
     });
 
+
+
+    async function ensureChatRoomUsers(roomId: string, user1Id: string, user2Id: string) {
+      try {
+        //check if users are already in the room
+        const existingUsers = await prisma.chatRoomUser.findMany({
+          where: { roomId }
+        })
+
+        const existingUserIds = existingUsers.map(u => userId);
+        const usersToAdd = [user1Id, user2Id].filter(id => !existingUserIds.includes(id));
+
+        if (usersToAdd.length > 0) {
+          await prisma.chatRoomUser.createMany({
+            data: usersToAdd.map(userId => ({
+              userId,
+              roomId
+            }))
+          });
+          console.log(`Added ${usersToAdd.length} users to room ${roomId}`);
+        }
+      } catch (error) {
+        console.error('Error ensuring ChatRoomUsers:', error);
+      }
+    }
     // 💬 SEND MESSAGE (THE CORE FEATURE)
     // 💬 SEND MESSAGE (THE CORE FEATURE)
     socket.on('message:send', async (data) => {
@@ -82,37 +107,15 @@ export const setupSocketHandlers = (
             data: [
               { userId: userId, roomId },
               { userId: data.receiverId, roomId }
-            ]
-            // skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
+            ],
+            skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
           });
           console.log(`added user to room:${roomId}`);
+          // ensureChatRoomUsers(roomId , userId , data.receiverId );
         } catch (userError) {
           console.log('Users already in room (this is fine');
         }
 
-        async function ensureChatRoomUsers(roomId: string, user1Id: string, user2Id: string) {
-          try {
-            //check if users are already in the room
-            const existingUsers = await prisma.chatRoomUser.findMany({
-              where:{roomId}
-            })
-
-            const existingUserIds = existingUsers.map(u =>userId);
-            const usersToAdd = [user1Id , user2Id].filter(id => !existingUserIds.includes(id));
-
-            if(usersToAdd.length > 0 ){
-              await prisma.chatRoomUser.createMany({
-                data: usersToAdd.map(userId=>({
-                  userId , 
-                  roomId
-                }))
-              });
-              console.log(`Added ${usersToAdd.length} users to room ${roomId}`);
-            }
-          } catch (error) {
-            console.error('Error ensuring ChatRoomUsers:', error);
-          }
-        }
         // Save message to database
         const message = await prisma.message.create({
           data: {
@@ -144,10 +147,10 @@ export const setupSocketHandlers = (
           content: message.content,
           messageType: message.messageType,
           timestamp: message.timestamp,
-          sender:{
+          sender: {
             ...message.sender,
-            profilePic:message.sender.profilePic ??undefined,
-            About:message.sender.About ?? undefined,
+            profilePic: message.sender.profilePic ?? undefined,
+            About: message.sender.About ?? undefined,
           },
         };
 
@@ -173,6 +176,7 @@ export const setupSocketHandlers = (
     socket.on('room:join', (data) => {
       socket.join(data.roomId);
       console.log(`🚪 ${username} joined room: ${data.roomId}`);
+
     });
 
     // 🔌 DISCONNECT

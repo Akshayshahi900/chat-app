@@ -47,12 +47,13 @@ model Message {
 }
 
 model ChatRoom {
-  roomId       String         @id @map("_id") // room:user1:user2 (sorted)
+  roomId       String         @id @map("_id") // room:user1:user2 (sorted) 
   lastActivity DateTime       @default(now())
   createdAt    DateTime       @default(now())
   ChatRoomUser ChatRoomUser[]
 
   @@map("chat_rooms")
+
 }
 
 model ChatRoomUser {
