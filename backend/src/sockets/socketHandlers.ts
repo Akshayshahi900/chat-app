@@ -61,29 +61,29 @@ export const setupSocketHandlers = (
 
 
 
-    async function ensureChatRoomUsers(roomId: string, user1Id: string, user2Id: string) {
-      try {
-        //check if users are already in the room
-        const existingUsers = await prisma.chatRoomUser.findMany({
-          where: { roomId }
-        })
+    // async function ensureChatRoomUsers(roomId: string, user1Id: string, user2Id: string) {
+    //   try {
+    //     //check if users are already in the room
+    //     const existingUsers = await prisma.chatRoomUser.findMany({
+    //       where: { roomId }
+    //     })
 
-        const existingUserIds = existingUsers.map(u => userId);
-        const usersToAdd = [user1Id, user2Id].filter(id => !existingUserIds.includes(id));
+    //     const existingUserIds = existingUsers.map(u => userId);
+    //     const usersToAdd = [user1Id, user2Id].filter(id => !existingUserIds.includes(id));
 
-        if (usersToAdd.length > 0) {
-          await prisma.chatRoomUser.createMany({
-            data: usersToAdd.map(userId => ({
-              userId,
-              roomId
-            }))
-          });
-          console.log(`Added ${usersToAdd.length} users to room ${roomId}`);
-        }
-      } catch (error) {
-        console.error('Error ensuring ChatRoomUsers:', error);
-      }
-    }
+    //     if (usersToAdd.length > 0) {
+    //       await prisma.chatRoomUser.createMany({
+    //         data: usersToAdd.map(userId => ({
+    //           userId,
+    //           roomId
+    //         }))
+    //       });
+    //       console.log(`Added ${usersToAdd.length} users to room ${roomId}`);
+    //     }
+    //   } catch (error) {
+    //     console.error('Error ensuring ChatRoomUsers:', error);
+    //   }
+    // }
     // 💬 SEND MESSAGE (THE CORE FEATURE)
     // 💬 SEND MESSAGE (THE CORE FEATURE)
     socket.on('message:send', async (data) => {
@@ -102,19 +102,19 @@ export const setupSocketHandlers = (
           create: { roomId }
         });
 
-        try {
-          await prisma.chatRoomUser.createMany({
-            data: [
-              { userId: userId, roomId },
-              { userId: data.receiverId, roomId }
-            ],
-            skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
-          });
-          console.log(`added user to room:${roomId}`);
-          // ensureChatRoomUsers(roomId , userId , data.receiverId );
-        } catch (userError) {
-          console.log('Users already in room (this is fine');
-        }
+        // try {
+        //   await prisma.chatRoomUser.createMany({
+        //     data: [
+        //       { userId: userId, roomId },
+        //       { userId: data.receiverId, roomId }
+        //     ],
+        //     skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
+        //   });
+        //   console.log(`added user to room:${roomId}`);
+        //   // ensureChatRoomUsers(roomId , userId , data.receiverId );
+        // } catch (userError) {
+        //   console.log('Users already in room (this is fine');
+        // }
 
         // Save message to database
         const message = await prisma.message.create({

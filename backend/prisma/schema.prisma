@@ -53,6 +53,8 @@ model ChatRoom {
   ChatRoomUser ChatRoomUser[]
 
   @@map("chat_rooms")
+  @@index([lastActivity]) //for fast sorting
+  
 
 }
 
