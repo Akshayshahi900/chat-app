@@ -1,9 +1,10 @@
+// ✅ Shared interfaces
 export interface User {
   id: string;
   name: string;
-  username: string;
-  profilePic?: string;
-  About?: string;
+  username?: string;
+  profilePic?: string | null;
+  About?: string | null;
   isOnline?: boolean;
 }
 
@@ -19,8 +20,9 @@ export interface Message {
 }
 
 export interface Chat {
+  roomId: string;
   user: User;
   lastMessage?: string;
-  lastMessageTime?: Date;
+  lastMessageTime?: Date | string;
   unreadCount: number;
 }
