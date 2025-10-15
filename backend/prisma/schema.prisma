@@ -38,8 +38,9 @@ model Message {
   status      String   @default("sent") // sent, delivered, read
 
   // Relations
-  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender   User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User       @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  ChatRoom ChatRoom[]
 
   @@index([roomId])
   @@index([timestamp])
@@ -47,15 +48,18 @@ model Message {
 }
 
 model ChatRoom {
-  roomId       String         @id @map("_id") // room:user1:user2 (sorted) 
-  lastActivity DateTime       @default(now())
-  createdAt    DateTime       @default(now())
+  roomId             String   @id @map("_id") // room:user1:user2 (sorted) 
+  lastActivity       DateTime @default(now())
+  createdAt          DateTime @default(now())
+  lastMessageId      String?  @db.ObjectId
+  lastMessageContent String?
+
+  //Relations
   ChatRoomUser ChatRoomUser[]
+  lastMessage Message?       @relation(fields: [lastMessageId], references: [id], onDelete: Cascade)
 
-  @@map("chat_rooms")
   @@index([lastActivity]) //for fast sorting
-  
-
+  @@map("chat_rooms")
 }
 
 model ChatRoomUser {

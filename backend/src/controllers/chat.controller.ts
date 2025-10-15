@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 
 interface AuthRequest extends Request {
-    user?: any;
+  user?: any;
 }
 export const getChatList = async (req: AuthRequest, res: Response) => {
   try {
@@ -23,6 +23,16 @@ export const getChatList = async (req: AuthRequest, res: Response) => {
       },
       orderBy: {
         lastActivity: 'desc'  // Most recent chats first
+      },
+      include: {
+        lastMessage: {  // 🆕 INCLUDE LAST MESSAGE DIRECTLY!
+          select: {
+            content: true,
+            timestamp: true,
+            senderId: true,
+            status: true
+          }
+        }
       }
     });
 
@@ -56,18 +66,11 @@ export const getChatList = async (req: AuthRequest, res: Response) => {
             console.log(`❌ Other user not found: ${otherUserId}`);
             return null;
           }
+          
 
-          // Get last message in this room
-          const lastMessage = await prisma.message.findFirst({
-            where: { roomId: room.roomId },
-            orderBy: { timestamp: 'desc' },
-            select: {
-              content: true,
-              timestamp: true,
-              senderId: true,
-              status: true
-            }
-          });
+          //last message
+            const lastMessageContent = room.lastMessageContent || room.lastMessage?.content || 'Start chatting...';
+          const lastMessageTime = room.lastMessage?.timestamp || room.lastActivity;
 
           // Count unread messages
           const unreadCount = await prisma.message.count({
@@ -81,8 +84,8 @@ export const getChatList = async (req: AuthRequest, res: Response) => {
           return {
             roomId: room.roomId,
             user: otherUser,
-            lastMessage: lastMessage?.content || 'Start chatting...',
-            lastMessageTime: lastMessage?.timestamp || room.lastActivity,
+            lastMessage: lastMessageContent,
+            lastMessageTime: lastMessageTime,
             unreadCount: unreadCount
           };
 

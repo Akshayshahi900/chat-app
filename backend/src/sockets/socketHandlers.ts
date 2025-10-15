@@ -102,21 +102,18 @@ export const setupSocketHandlers = (
           create: { roomId }
         });
 
-        // try {
-        //   await prisma.chatRoomUser.createMany({
-        //     data: [
-        //       { userId: userId, roomId },
-        //       { userId: data.receiverId, roomId }
-        //     ],
-        //     skipDuplicates:true, // <-- Remove this line if your Prisma schema does not support it
-        //   });
-        //   console.log(`added user to room:${roomId}`);
-        //   // ensureChatRoomUsers(roomId , userId , data.receiverId );
-        // } catch (userError) {
-        //   console.log('Users already in room (this is fine');
-        // }
+        // 🆕 FIRST: Ensure room exists with last message fields
+        const room = await prisma.chatRoom.upsert({
+          where: { roomId },
+          update: {
+            // We'll update last message after creating the message
+          },
+          create: {
+            roomId,
+            lastMessageContent: data.content // Set initial last message
+          }
+        });
 
-        // Save message to database
         const message = await prisma.message.create({
           data: {
             roomId,
@@ -132,11 +129,22 @@ export const setupSocketHandlers = (
                 name: true,
                 username: true,
                 profilePic: true,
-                About: true
+                // About: true
               }
             }
           }
         });
+        // 🆕 CRITICAL: Update room with last message info
+        await prisma.chatRoom.update({
+          where: { roomId },
+          data: {
+            lastActivity: new Date(),
+            lastMessageId: message.id,
+            lastMessageContent: data.content
+          }
+        });
+
+        console.log(`Message saved and room updated with the last message`);
 
         // Create simple message object for socket emission
         const simpleMessage: SimpleMessage = {
@@ -149,8 +157,7 @@ export const setupSocketHandlers = (
           timestamp: message.timestamp,
           sender: {
             ...message.sender,
-            profilePic: message.sender.profilePic ?? undefined,
-            About: message.sender.About ?? undefined,
+            profilePic: message.sender.profilePic ?? undefined
           },
         };
 
