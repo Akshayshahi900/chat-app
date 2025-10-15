@@ -2,10 +2,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import ChatList from "@/components/ChatList";
-import {User , Message , Chat} from "../../../../shared/types"
+import { User, Message, Chat } from "../../../../shared/types"
 import Messages from "@/components/Messages";
-// ✅ Shared interfaces
-
 
 export default function ChatApp() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -19,6 +17,12 @@ export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    hasMore: true,
+    nextCursor: null as string | null,
+    isLoadingMore: false
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll
@@ -26,7 +30,91 @@ export default function ChatApp() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Connect Socket
+  // 🆕 Get current user on component mount
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.user.id);
+        }
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    
+    if (token) getCurrentUser();
+  }, [token]);
+
+  // 🆕 Load messages when chat is selected
+  const loadMessages = async (roomId: string, loadMore: boolean = false) => {
+    if (!token) return;
+    
+    try {
+      if (!loadMore) {
+        setMessages([]); // Clear messages for new chat
+        setPagination({ hasMore: true, nextCursor: null, isLoadingMore: false });
+      } else {
+        setPagination(prev => ({ ...prev, isLoadingMore: true }));
+      }
+
+      const cursorParam = loadMore && pagination.nextCursor ? `&cursor=${pagination.nextCursor}` : '';
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/${roomId}?limit=20${cursorParam}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (loadMore) {
+          // Prepend older messages
+          setMessages(prev => [...data.messages, ...prev]);
+        } else {
+          // Set initial messages
+          setMessages(data.messages);
+        }
+        
+        setPagination({
+          hasMore: data.pagination.hasMore,
+          nextCursor: data.pagination.nextCursor,
+          isLoadingMore: false
+        });
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setPagination(prev => ({ ...prev, isLoadingMore: false }));
+    }
+  };
+
+  // 🆕 Update selectChat function
+  const selectChat = async (chat: Chat) => {
+    setSelectedChat(chat);
+    await loadMessages(chat.roomId, false); // Load initial messages
+    
+    // Reset unread count
+    setChats(prev => prev.map(c =>
+      c.roomId === chat.roomId ? { ...c, unreadCount: 0 } : c
+    ));
+  };
+
+  // 🆕 Load more messages function
+  const loadMoreMessages = () => {
+    if (selectedChat && pagination.hasMore && !pagination.isLoadingMore) {
+      loadMessages(selectedChat.roomId, true);
+    }
+  };
+
+  // Connect Socket - FIXED VERSION
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     if (!storedToken) {
@@ -43,22 +131,44 @@ export default function ChatApp() {
     newSocket.on("connect", () => setIsConnected(true));
     newSocket.on("disconnect", () => setIsConnected(false));
 
-    // Receive message
+    // Receive message - 🆕 UPDATED to handle real-time messages properly
     newSocket.on("message:received", (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.user.id === message.senderId || chat.user.id === message.receiverId
-            ? {
-                ...chat,
-                lastMessage: message.content,
-                lastMessageTime: message.timestamp,
-                unreadCount:
-                  selectedChat?.user.id === message.senderId ? 0 : chat.unreadCount + 1,
-              }
-            : chat
-        )
-      );
+      console.log("📩 Real-time message received:", message);
+      
+      // If this message belongs to the currently selected chat, add it
+      if (selectedChat && message.roomId === selectedChat.roomId) {
+        setMessages(prev => [...prev, message]);
+      }
+      
+      // Update chat list with new message
+      setChats(prev => {
+        const updatedChats = prev.map(chat => {
+          if (chat.roomId === message.roomId) {
+            return {
+              ...chat,
+              lastMessage: message.content,
+              lastMessageTime: message.timestamp,
+              unreadCount: selectedChat?.roomId === message.roomId ? 0 : chat.unreadCount + 1
+            };
+          }
+          return chat;
+        });
+
+        // If this is a new chat (not in our list), add it
+        const isNewChat = !prev.find(chat => chat.roomId === message.roomId);
+        if (isNewChat) {
+          const newChat: Chat = {
+            roomId: message.roomId,
+            user: message.sender, // The sender is the other user
+            lastMessage: message.content,
+            lastMessageTime: message.timestamp,
+            unreadCount: selectedChat?.roomId === message.roomId ? 0 : 1
+          };
+          return [newChat, ...updatedChats];
+        }
+
+        return updatedChats;
+      });
     });
 
     // User found
@@ -87,8 +197,14 @@ export default function ChatApp() {
     });
 
     setSocket(newSocket);
-    return () => newSocket.disconnect();
-  }, [selectedChat]);
+
+    // ✅ FIXED CLEANUP: Return a function that returns void
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
+  }, [selectedChat]); // Added selectedChat dependency
 
   // Search users
   const searchUsers = () => {
@@ -98,26 +214,23 @@ export default function ChatApp() {
     }
   };
 
-  // Start chat
-  const startChat = (user: User) => {
+  // Start chat - 🆕 UPDATED to use selectChat
+  const startChat = async (user: User) => {
     const existingChat = chats.find((chat) => chat.user.id === user.id);
-    if (!existingChat) {
-      const newChat: Chat = {
-        roomId: `temp-${user.id}`,
-        user,
-        lastMessage: "Chat started",
-        lastMessageTime: new Date(),
-        unreadCount: 0,
-      };
-      setChats((prev) => [newChat, ...prev]);
-      setSelectedChat(newChat);
+    
+    if (existingChat) {
+      await selectChat(existingChat);
     } else {
-      setSelectedChat(existingChat);
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.user.id === user.id ? { ...chat, unreadCount: 0 } : chat
-        )
-      );
+      // For new chat, create temporary entry
+      const tempChat: Chat = {
+        roomId: `temp-${Date.now()}`,
+        user: user,
+        lastMessage: 'Start chatting...',
+        lastMessageTime: new Date(),
+        unreadCount: 0
+      };
+      setSelectedChat(tempChat);
+      setMessages([]);
     }
     setFoundUsers([]);
     setSearchQuery("");
@@ -195,14 +308,14 @@ export default function ChatApp() {
         <ChatList
           token={token}
           selectedChat={selectedChat}
-          setSelectedChat={setSelectedChat}
+          setSelectedChat={selectChat} // 🆕 Changed to use selectChat function
           chats={chats}
           setChats={setChats}
         />
       </div>
 
       {/* Right Chat Area */}
-         <Messages
+      <Messages
         selectedChat={selectedChat}
         messages={messages}
         newMessage={newMessage}
@@ -210,6 +323,10 @@ export default function ChatApp() {
         onSendMessage={sendMessage}
         onKeyPress={handleKeyPress}
         messagesEndRef={messagesEndRef}
+        currentUserId={currentUserId} // 🆕 ADD THIS
+        onLoadMore={loadMoreMessages} // 🆕 ADD THIS
+        isLoadingMore={pagination.isLoadingMore} // 🆕 ADD THIS
+        hasMore={pagination.hasMore} // 🆕 ADD THIS
       />
     </div>
   );
