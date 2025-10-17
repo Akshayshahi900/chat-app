@@ -1,14 +1,17 @@
 'use client';
 import React, { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { Menu, X, Search, Zap } from "lucide-react";
 import ChatList from "@/components/ChatList";
 import { User, Message, Chat } from "../../../../shared/types"
 import Messages from "@/components/Messages";
+import Logo from "@/components/ui/Logo";
 
 export default function ChatApp() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [foundUsers, setFoundUsers] = useState<User[]>([]);
@@ -30,7 +33,7 @@ export default function ChatApp() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 🆕 Get current user on component mount
+  // Get current user on component mount
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
@@ -51,7 +54,7 @@ export default function ChatApp() {
     if (token) getCurrentUser();
   }, [token]);
 
-  // 🆕 Load messages when chat is selected
+  // Load messages when chat is selected
   const loadMessages = async (roomId: string, loadMore: boolean = false) => {
     if (!token) return;
     
@@ -96,7 +99,7 @@ export default function ChatApp() {
     }
   };
 
-  // 🆕 Update selectChat function
+  // Update selectChat function
   const selectChat = async (chat: Chat) => {
     setSelectedChat(chat);
     await loadMessages(chat.roomId, false); // Load initial messages
@@ -107,7 +110,7 @@ export default function ChatApp() {
     ));
   };
 
-  // 🆕 Load more messages function
+  // Load more messages function
   const loadMoreMessages = () => {
     if (selectedChat && pagination.hasMore && !pagination.isLoadingMore) {
       loadMessages(selectedChat.roomId, true);
@@ -131,7 +134,7 @@ export default function ChatApp() {
     newSocket.on("connect", () => setIsConnected(true));
     newSocket.on("disconnect", () => setIsConnected(false));
 
-    // Receive message - 🆕 UPDATED to handle real-time messages properly
+    // Receive message - UPDATED to handle real-time messages properly
     newSocket.on("message:received", (message: Message) => {
       console.log("📩 Real-time message received:", message);
       
@@ -198,7 +201,7 @@ export default function ChatApp() {
 
     setSocket(newSocket);
 
-    // ✅ FIXED CLEANUP: Return a function that returns void
+    // FIXED CLEANUP: Return a function that returns void
     return () => {
       if (newSocket) {
         newSocket.disconnect();
@@ -214,7 +217,7 @@ export default function ChatApp() {
     }
   };
 
-  // Start chat - 🆕 UPDATED to use selectChat
+  // Start chat - UPDATED to use selectChat
   const startChat = async (user: User) => {
     const existingChat = chats.find((chat) => chat.user.id === user.id);
     
@@ -256,32 +259,60 @@ export default function ChatApp() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100">
-      {/* Left Sidebar */}
-      <div className="w-1/3 bg-gray-900 border-r border-gray-800 flex flex-col">
+      {/* Left Sidebar with Hamburger Menu */}
+      <div className={`${isCollapsed ? 'w-16' : 'w-auto'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
         <div className="p-4 border-b border-gray-800">
-          <h1 className="text-2xl font-bold text-blue-400 mb-3">Zing ⚡</h1>
-
-          {/* Search */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
-              placeholder="Search users..."
-              className="flex-1 p-2 bg-gray-800 border border-gray-700 text-gray-100 rounded focus:outline-none focus:border-blue-500"
-            />
+          {/* Header with Logo and Hamburger */}
+          <div className="flex items-center justify-between mb-3">
+            {!isCollapsed && <Logo isCollapsed={isCollapsed}/>}
+            {isCollapsed && (
+              <div className="w-full flex justify-center">
+                <Logo isCollapsed={isCollapsed}/>
+              </div>
+            )}
             <button
-              onClick={searchUsers}
-              className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-2 hover:bg-gray-800 rounded transition-colors"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              Search
+              {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
             </button>
           </div>
+
+          {/* Search - Expanded View */}
+          {!isCollapsed && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+                placeholder="Search users..."
+                className="flex-1 p-2 bg-gray-800 border border-gray-700 text-gray-100 rounded focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={searchUsers}
+                className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700"
+              >
+                Search
+              </button>
+            </div>
+          )}
+          
+          {/* Search - Collapsed View (Icon Only) */}
+          {isCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="w-full p-2 bg-gray-800 hover:bg-gray-700 rounded transition-colors flex items-center justify-center"
+              title="Search users"
+            >
+              <Search className="w-5 h-5 text-gray-400" />
+            </button>
+          )}
         </div>
 
-        {/* Search Results */}
-        {foundUsers.length > 0 && (
+        {/* Search Results - Only show when expanded */}
+        {!isCollapsed && foundUsers.length > 0 && (
           <div className="border-b border-gray-800 p-2">
             <h3 className="text-sm font-medium text-gray-400 mb-2">Search Results</h3>
             {foundUsers.map(user => (
@@ -304,13 +335,14 @@ export default function ChatApp() {
           </div>
         )}
 
-        {/* ✅ Integrated ChatList */}
+        {/* Integrated ChatList */}
         <ChatList
           token={token}
           selectedChat={selectedChat}
-          setSelectedChat={selectChat} // 🆕 Changed to use selectChat function
+          setSelectedChat={selectChat}
           chats={chats}
           setChats={setChats}
+          isCollapsed={isCollapsed}
         />
       </div>
 
@@ -323,10 +355,10 @@ export default function ChatApp() {
         onSendMessage={sendMessage}
         onKeyPress={handleKeyPress}
         messagesEndRef={messagesEndRef}
-        currentUserId={currentUserId} // 🆕 ADD THIS
-        onLoadMore={loadMoreMessages} // 🆕 ADD THIS
-        isLoadingMore={pagination.isLoadingMore} // 🆕 ADD THIS
-        hasMore={pagination.hasMore} // 🆕 ADD THIS
+        currentUserId={currentUserId}
+        onLoadMore={loadMoreMessages}
+        isLoadingMore={pagination.isLoadingMore}
+        hasMore={pagination.hasMore}
       />
     </div>
   );
