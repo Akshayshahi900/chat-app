@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 import { User, Message, Chat } from "../../../shared/types";
+import { Loader } from "lucide-react";
 
 interface ChatListProps {
   token?: string | null;
@@ -49,7 +50,7 @@ const ChatList: React.FC<ChatListProps> = ({
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400">
-        {isCollapsed ? "..." : "Loading chats..."}
+        {isCollapsed ? "..." : <Loader/>}
       </div>
     );
   }

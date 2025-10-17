@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessagesProps } from '../../../shared/messages';
+import Loader, { Loader2 } from 'lucide-react';
 
 const Messages: React.FC<MessagesProps> = ({
   selectedChat,
@@ -95,12 +96,13 @@ const Messages: React.FC<MessagesProps> = ({
           >
             {/* Load More Indicator */}
             {isLoadingMore && (
-              <div className="flex justify-center py-2">
-                <div className="text-gray-400 text-xs sm:text-sm flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  Loading older messages...
-                </div>
-              </div>
+              // <div className="flex justify-center py-2">
+              //   <div className="text-gray-400 text-xs sm:text-sm flex items-center gap-2">
+              //     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              //     Loading older messages...
+              //   </div>
+              // </div>
+              <Loader2/>
             )}
 
             {/* Show Load More Prompt */}
