@@ -37,6 +37,14 @@ model Message {
   timestamp   DateTime @default(now())
   status      String   @default("sent") // sent, delivered, read
 
+
+  // Media fields (add these)
+  fileUrl     String?  // Cloudinary URL
+  fileName    String?  // Original file name
+  fileSize    Int?     // File size in bytes
+  thumbnailUrl String? // For videos - preview image
+  
+
   // Relations
   sender   User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User       @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)

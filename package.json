@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/Akshayshahi900/chat-app#readme",
   "devDependencies": {
+    "@types/node": "^24.8.1",
     "prisma": "^6.17.1"
   }
 }
