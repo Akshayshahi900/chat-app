@@ -17,6 +17,11 @@ export interface Message {
   messageType: string;
   timestamp: Date;
   sender: User;
+  fileUrl?: string;
+  fileType?: string;
+  fileName?: string;
+  fileSize?:number;
+
 }
 
 export interface Chat {

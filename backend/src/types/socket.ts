@@ -41,8 +41,13 @@ export interface SimpleMessage {
   content: string;
   messageType: string;
   timestamp: Date;
-  sender: SimpleUser; // Use SimpleUser instead of full User
+  sender: SimpleUser;
+  fileUrl?: string;
+  fileType?: string;
+  fileName?: string;
+  fileSize?: number;
 }
+
 
 // Keep the original User interface for database
 export interface User {

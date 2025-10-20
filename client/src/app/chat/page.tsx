@@ -6,6 +6,7 @@ import ChatList from "@/components/ChatList";
 import { User, Message, Chat } from "../../../../shared/types"
 import Messages from "@/components/Messages";
 import Logo from "@/components/ui/Logo";
+import Profile from "@/components/Profile";
 
 export default function ChatApp() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -50,14 +51,14 @@ export default function ChatApp() {
         console.error('Error getting current user:', error);
       }
     };
-    
+
     if (token) getCurrentUser();
   }, [token]);
 
   // Load messages when chat is selected
   const loadMessages = async (roomId: string, loadMore: boolean = false) => {
     if (!token) return;
-    
+
     try {
       if (!loadMore) {
         setMessages([]); // Clear messages for new chat
@@ -75,10 +76,10 @@ export default function ChatApp() {
           }
         }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (loadMore) {
           // Prepend older messages
           setMessages(prev => [...data.messages, ...prev]);
@@ -86,7 +87,7 @@ export default function ChatApp() {
           // Set initial messages
           setMessages(data.messages);
         }
-        
+
         setPagination({
           hasMore: data.pagination.hasMore,
           nextCursor: data.pagination.nextCursor,
@@ -103,7 +104,7 @@ export default function ChatApp() {
   const selectChat = async (chat: Chat) => {
     setSelectedChat(chat);
     await loadMessages(chat.roomId, false); // Load initial messages
-    
+
     // Reset unread count
     setChats(prev => prev.map(c =>
       c.roomId === chat.roomId ? { ...c, unreadCount: 0 } : c
@@ -137,12 +138,12 @@ export default function ChatApp() {
     // Receive message - UPDATED to handle real-time messages properly
     newSocket.on("message:received", (message: Message) => {
       console.log("📩 Real-time message received:", message);
-      
+
       // If this message belongs to the currently selected chat, add it
       if (selectedChat && message.roomId === selectedChat.roomId) {
         setMessages(prev => [...prev, message]);
       }
-      
+
       // Update chat list with new message
       setChats(prev => {
         const updatedChats = prev.map(chat => {
@@ -220,7 +221,7 @@ export default function ChatApp() {
   // Start chat - UPDATED to use selectChat
   const startChat = async (user: User) => {
     const existingChat = chats.find((chat) => chat.user.id === user.id);
-    
+
     if (existingChat) {
       await selectChat(existingChat);
     } else {
@@ -240,34 +241,187 @@ export default function ChatApp() {
   };
 
   // Send message
-  const sendMessage = () => {
-    if (socket && selectedChat && newMessage.trim()) {
-      socket.emit("message:send", {
-        receiverId: selectedChat.user.id,
-        content: newMessage,
-      });
-      setNewMessage("");
-    }
-  };
+  // const sendMessage = () => {
+  //   if (socket && selectedChat && newMessage.trim()) {
+  //     socket.emit("message:send", {
+  //       receiverId: selectedChat.user.id,
+  //       content: newMessage,
+  //     });
+  //     setNewMessage("");
+  //   }
+  // };
 
+  // ------------------------------
+const sendMessage = (customMessage?: {
+  messageType?: string;
+  content?: string;
+  fileName?: string;
+  fileUrl?: string;
+  fileSize?: number;
+  fileType?: string;
+}) => {
+  if (!socket || !selectedChat) return;
+
+  // If sending text
+  if (!customMessage && newMessage.trim()) {
+    socket.emit("message:send", {
+      receiverId: selectedChat.user.id,
+      content: newMessage,
+      type: "text",
+    });
+    setNewMessage("");
+    return;
+  }
+
+  // If sending file (customMessage passed)
+  if (customMessage) {
+    socket.emit("message:send", {
+      receiverId: selectedChat.user.id,
+      content: customMessage.content || "",
+      type: customMessage.messageType,
+      fileUrl:customMessage.fileUrl,
+      fileType: customMessage.fileType,
+      fileName: customMessage.fileName,
+      fileSize: customMessage.fileSize,
+    });
+  }
+};
+
+// --- Handle File Upload + Send ---
+// const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+//   const file = e.target.files?.[0];
+//   if (!file) return;
+//   if (file.size > 10 * 1024 * 1024) {
+//     alert("File size must be less than 10MB");
+//     return;
+//   }
+
+//   try {
+//     const formData = new FormData();
+//     formData.append("file", file);
+
+//     const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/upload`, {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: formData,
+//     });
+
+//     const data = await res.json();
+//     if (!res.ok) {
+//       alert(data.message || "Upload failed");
+//       return;
+//     }
+
+//     // Send via socket after successful upload
+//     sendMessage({
+//       type: data.type.startsWith("image")
+//         ? "image"
+//         : data.type.startsWith("video")
+//         ? "video"
+//         : "file",
+//       content: data.url,
+//       fileName: data.name,
+//       fileSize: data.size,
+//     });
+//   } catch (err) {
+//     console.error("File upload error:", err);
+//     alert("File upload failed");
+//   }
+// };
+
+const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert("File size must be less than 10MB");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Upload failed");
+      return;
+    }
+
+    // Send message through socket after upload
+    socket?.emit("message:send", {
+      receiverId: selectedChat?.user.id,
+      content: data.url,
+      messageType: data.type,
+      fileUrl: data.url,
+      fileType: file.type,
+      fileName: data.name,
+      fileSize: data.size,
+    });
+  } catch (err) {
+    console.error("File upload error:", err);
+    alert("File upload failed");
+  }
+};
+
+  // ---------------------------------
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
+  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+  //   if (file.size > 10 * 1024 * 1024) {
+  //     alert("File size must be less than 10MB");
+  //     return;
+  //   }
+  //   const formdata = new FormData();
+  //   formdata.append("file", file);
+
+  //   const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/upload`, {
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`
+  //     }
+  //     ,
+  //     body: formdata
+  //   });
+
+  //   const data = await res.json();
+  //   if(res.ok){
+  //     sendMessage({
+  //       type: "file",
+  //       content: data.url,
+  //       sender: user
+  //     });
+  //   }
+  // }
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100">
       {/* Left Sidebar with Hamburger Menu */}
-      <div className={`${isCollapsed ? 'w-16' : 'w-auto'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
+      <div className={`${isCollapsed ? 'w-16' : 'md:w-1/2 lg:w-1/3'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
         <div className="p-4 border-b border-gray-800">
           {/* Header with Logo and Hamburger */}
           <div className="flex items-center justify-between mb-3">
-            {!isCollapsed && <Logo isCollapsed={isCollapsed}/>}
+            {!isCollapsed && <Logo isCollapsed={isCollapsed} />}
             {isCollapsed && (
               <div className="w-full flex justify-center">
-                <Logo isCollapsed={isCollapsed}/>
+                <Logo isCollapsed={isCollapsed} />
               </div>
             )}
             <button
@@ -298,7 +452,7 @@ export default function ChatApp() {
               </button>
             </div>
           )}
-          
+
           {/* Search - Collapsed View (Icon Only) */}
           {isCollapsed && (
             <button
@@ -344,6 +498,7 @@ export default function ChatApp() {
           setChats={setChats}
           isCollapsed={isCollapsed}
         />
+        <Profile isCollapsed={isCollapsed} />
       </div>
 
       {/* Right Chat Area */}
@@ -359,6 +514,7 @@ export default function ChatApp() {
         onLoadMore={loadMoreMessages}
         isLoadingMore={pagination.isLoadingMore}
         hasMore={pagination.hasMore}
+        handleFileChange={handleFileChange}
       />
     </div>
   );

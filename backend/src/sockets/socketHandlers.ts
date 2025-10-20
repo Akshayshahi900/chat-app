@@ -86,41 +86,127 @@ export const setupSocketHandlers = (
     // }
     // 💬 SEND MESSAGE (THE CORE FEATURE)
     // 💬 SEND MESSAGE (THE CORE FEATURE)
-    socket.on('message:send', async (data) => {
-      try {
-        console.log(`📨 ${username} to ${data.receiverId}: ${data.content}`);
+    // socket.on('message:send', async (data) => {
+    //   try {
+    //     console.log(`📨 ${username} to ${data.receiverId}: ${data.content}`);
 
-        // Create room ID (sorted to ensure consistency)
+    //     // Create room ID (sorted to ensure consistency)
+    //     const sortedIds = [userId, data.receiverId].sort();
+    //     const roomId = `room:${sortedIds[0]}:${sortedIds[1]}`;
+
+    //     // Ensure room exists AND users are added to ChatRoomUser
+
+    //     await prisma.chatRoom.upsert({
+    //       where: { roomId },
+    //       update: { lastActivity: new Date() },
+    //       create: { roomId }
+    //     });
+
+    //     // 🆕 FIRST: Ensure room exists with last message fields
+    //     const room = await prisma.chatRoom.upsert({
+    //       where: { roomId },
+    //       update: {
+    //         // We'll update last message after creating the message
+    //       },
+    //       create: {
+    //         roomId,
+    //         lastMessageContent: data.content // Set initial last message
+    //       }
+    //     });
+
+    //     const message = await prisma.message.create({
+    //       data: {
+    //         roomId,
+    //         senderId: userId,
+    //         receiverId: data.receiverId,
+    //         content: data.content,
+    //         messageType: 'text'
+    //       },
+    //       include: {
+    //         sender: {
+    //           select: {
+    //             id: true,
+    //             name: true,
+    //             username: true,
+    //             profilePic: true,
+    //             // About: true
+    //           }
+    //         }
+    //       }
+    //     });
+    //     // 🆕 CRITICAL: Update room with last message info
+    //     await prisma.chatRoom.update({
+    //       where: { roomId },
+    //       data: {
+    //         lastActivity: new Date(),
+    //         lastMessageId: message.id,
+    //         lastMessageContent: data.content
+    //       }
+    //     });
+
+    //     console.log(`Message saved and room updated with the last message`);
+
+    //     // Create simple message object for socket emission
+    //     const simpleMessage: SimpleMessage = {
+    //       id: message.id,
+    //       roomId: message.roomId,
+    //       senderId: message.senderId,
+    //       receiverId: message.receiverId,
+    //       content: message.content,
+    //       messageType: message.messageType,
+    //       timestamp: message.timestamp,
+    //       sender: {
+    //         ...message.sender,
+    //         profilePic: message.sender.profilePic ?? undefined
+    //       },
+    //     };
+
+    //     // Check if receiver is online
+    //     const receiverSocketId = onlineUsers.get(data.receiverId);
+
+    //     if (receiverSocketId) {
+    //       // Send to receiver
+    //       io.to(receiverSocketId).emit('message:received', simpleMessage);
+    //     }
+
+    //     // Also send back to sender (so they see their own message)
+    //     socket.emit('message:received', simpleMessage);
+
+    //     console.log(`✅ Message saved and delivered`);
+
+    //   } catch (error) {
+    //     console.error('Message send error:', error);
+    //   }
+    // });
+    socket.on("message:send", async (data) => {
+      try {
+        console.log(`📨 ${username} → ${data.receiverId}: ${data.content || "[file]"}`);
+
         const sortedIds = [userId, data.receiverId].sort();
         const roomId = `room:${sortedIds[0]}:${sortedIds[1]}`;
 
-        // Ensure room exists AND users are added to ChatRoomUser
-
+        // ✅ Ensure the chat room exists
         await prisma.chatRoom.upsert({
           where: { roomId },
           update: { lastActivity: new Date() },
-          create: { roomId }
+          create: { roomId },
         });
 
-        // 🆕 FIRST: Ensure room exists with last message fields
-        const room = await prisma.chatRoom.upsert({
-          where: { roomId },
-          update: {
-            // We'll update last message after creating the message
-          },
-          create: {
-            roomId,
-            lastMessageContent: data.content // Set initial last message
-          }
-        });
+        // ✅ Determine message type properly
+        const messageType =  data.messageType ||"text";
 
+        // ✅ Create message entry with optional file metadata
         const message = await prisma.message.create({
           data: {
             roomId,
             senderId: userId,
             receiverId: data.receiverId,
-            content: data.content,
-            messageType: 'text'
+            content: data.content || "", // always string
+            messageType,
+            fileUrl: data.fileUrl || null, // Cloudinary URL
+            fileType: data.fileType || null,
+            fileName: data.fileName || null,
+            fileSize: data.fileSize || null,
           },
           include: {
             sender: {
@@ -129,24 +215,25 @@ export const setupSocketHandlers = (
                 name: true,
                 username: true,
                 profilePic: true,
-                // About: true
-              }
-            }
-          }
+              },
+            },
+          },
         });
-        // 🆕 CRITICAL: Update room with last message info
+
+        // ✅ Update the room’s last message info
         await prisma.chatRoom.update({
           where: { roomId },
           data: {
             lastActivity: new Date(),
             lastMessageId: message.id,
-            lastMessageContent: data.content
-          }
+            lastMessageContent:
+              message.messageType === "text"
+                ? message.content
+                : `[${message.messageType.toUpperCase()}] ${message.fileName || ""}`,
+          },
         });
 
-        console.log(`Message saved and room updated with the last message`);
-
-        // Create simple message object for socket emission
+        // ✅ Build simplified message object for frontend
         const simpleMessage: SimpleMessage = {
           id: message.id,
           roomId: message.roomId,
@@ -157,25 +244,26 @@ export const setupSocketHandlers = (
           timestamp: message.timestamp,
           sender: {
             ...message.sender,
-            profilePic: message.sender.profilePic ?? undefined
+            profilePic: message.sender.profilePic ?? undefined,
           },
+          fileUrl: message.fileUrl ?? undefined,
+          fileType: message.fileType ?? undefined,
+          fileName: message.fileName ?? undefined,
+          fileSize: message.fileSize ?? undefined,
         };
 
-        // Check if receiver is online
+        // ✅ Send message to receiver (if online)
         const receiverSocketId = onlineUsers.get(data.receiverId);
-
         if (receiverSocketId) {
-          // Send to receiver
-          io.to(receiverSocketId).emit('message:received', simpleMessage);
+          io.to(receiverSocketId).emit("message:received", simpleMessage);
         }
 
-        // Also send back to sender (so they see their own message)
-        socket.emit('message:received', simpleMessage);
+        // ✅ Also echo to sender
+        socket.emit("message:received", simpleMessage);
 
-        console.log(`✅ Message saved and delivered`);
-
+        console.log(`✅ Message (${messageType}) saved and delivered`);
       } catch (error) {
-        console.error('Message send error:', error);
+        console.error("Message send error:", error);
       }
     });
 

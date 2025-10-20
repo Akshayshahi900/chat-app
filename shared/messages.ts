@@ -12,4 +12,5 @@ export interface MessagesProps {
   onLoadMore: () => void; // 🆕 ADD THIS
   isLoadingMore: boolean; // 🆕 ADD THIS
   hasMore: boolean; // 🆕 ADD THIS
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }

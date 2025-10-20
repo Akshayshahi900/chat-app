@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessagesProps } from '../../../shared/messages';
-import Loader, { Loader2 } from 'lucide-react';
+import Loader, { Loader2, Paperclip } from 'lucide-react';
+import Upload from './Upload';
 
 const Messages: React.FC<MessagesProps> = ({
   selectedChat,
@@ -8,6 +9,7 @@ const Messages: React.FC<MessagesProps> = ({
   newMessage,
   setNewMessage,
   onSendMessage,
+  handleFileChange,
   onKeyPress,
   messagesEndRef,
   currentUserId,
@@ -90,7 +92,7 @@ const Messages: React.FC<MessagesProps> = ({
           </div>
 
           {/* Messages Area with Custom Scrollbar - Responsive */}
-          <div 
+          <div
             className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 bg-gray-950 custom-scrollbar"
             onScroll={handleScroll}
           >
@@ -102,13 +104,13 @@ const Messages: React.FC<MessagesProps> = ({
               //     Loading older messages...
               //   </div>
               // </div>
-              <Loader2/>
+              <Loader2 />
             )}
 
             {/* Show Load More Prompt */}
             {hasMore && !isLoadingMore && messages.length > 0 && (
               <div className="flex justify-center py-2">
-                <button 
+                <button
                   onClick={onLoadMore}
                   className="text-blue-400 text-xs sm:text-sm hover:text-blue-300 transition-colors px-4 py-2 rounded-full hover:bg-gray-800"
                 >
@@ -129,24 +131,44 @@ const Messages: React.FC<MessagesProps> = ({
             ) : (
               messages.map((message) => (
                 <div
-                  key={`${message.id}-${message.timestamp}`} 
-                  className={`flex ${
-                    message.senderId === currentUserId ? "justify-end" : "justify-start"
-                  } animate-fadeIn`}
+                  key={`${message.id}-${message.timestamp}`}
+                  className={`flex ${message.senderId === currentUserId ? "justify-end" : "justify-start"
+                    } animate-fadeIn`}
                 >
                   <div
-                    className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-2xl shadow-lg ${
-                      message.senderId === currentUserId
-                        ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none"
-                        : "bg-gradient-to-br from-gray-800 to-gray-850 text-gray-100 rounded-bl-none"
-                    }`}
+                    className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-2xl shadow-lg ${message.senderId === currentUserId
+                      ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none"
+                      : "bg-gradient-to-br from-gray-800 to-gray-850 text-gray-100 rounded-bl-none"
+                      }`}
                   >
-                    <p className="whitespace-pre-wrap break-words text-sm sm:text-base">
-                      {message.content}
-                    </p>
-                    <p className={`text-[10px] sm:text-xs mt-1 ${
-                      message.senderId === currentUserId ? 'text-blue-200' : 'text-gray-400'
-                    }`}>
+                    {message.messageType === "image" ? (
+                      <img
+                        src={message.content}
+                        alt="Shared image"
+                        className="max-w-full rounded-lg mt-1 cursor-pointer hover:opacity-90 transition"
+                      />
+                    ) : message.messageType === "video" ? (
+                      <video
+                        src={message.content}
+                        controls
+                        className="max-w-full rounded-lg mt-1"
+                      />
+                    ) : message.messageType === "file" ? (
+                      <a
+                        href={message.content}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 underline break-all block mt-1 hover:text-blue-300"
+                      >
+                        📎 {message.fileName || "Download File"}
+                      </a>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words text-sm sm:text-base">
+                        {message.content}
+                      </p>
+                    )}
+                    <p className={`text-[10px] sm:text-xs mt-1 ${message.senderId === currentUserId ? 'text-blue-200' : 'text-gray-400'
+                      }`}>
                       {new Date(message.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -169,6 +191,16 @@ const Messages: React.FC<MessagesProps> = ({
               placeholder="Type a message..."
               className="flex-1 bg-gray-800 border border-gray-700 rounded-full px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base text-gray-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
+            <label htmlFor="file-input" className="cursor-pointer">
+              <Paperclip />
+            </label>
+            <input
+              id="file-input"
+              type="file"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
             <button
               onClick={onSendMessage}
               disabled={!newMessage.trim()}

@@ -48,8 +48,7 @@ export const getChatList = async (req: AuthRequest, res: Response) => {
           const user2Id = roomParts[2];
 
           // Determine who the other user is
-          const otherUserId = user1Id === userId ? user2Id : user1Id;
-
+const otherUserId = user1Id === userId.toString() ? user2Id : user1Id;
           // Get the other user's details
           const otherUser = await prisma.user.findUnique({
             where: { id: otherUserId },

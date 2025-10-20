@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
  const [form, setForm] = useState({ 
   name: "", 
   username: "", // Add this
   email: "", 
-  password: "" 
+  password: "",
+  profilePic:"",
+  About:""
 });
 
+const router = useRouter()
   // Global change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,6 +32,10 @@ export default function SignupPage() {
       const data = await res.json();
       console.log(data);
 
+      if (res.ok) {
+        router.push("/login");
+      }
+
     } catch (err) {
       console.error(err);
     }
@@ -43,6 +51,7 @@ export default function SignupPage() {
             type="text"
             name="name"
             placeholder="Name"
+            value={form.name}
             className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             onChange={handleChange}
           />
@@ -50,6 +59,7 @@ export default function SignupPage() {
             type="text"
             name="username"
             placeholder="Username"
+            value = {form.username}
             className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             onChange={handleChange}
           />
@@ -58,6 +68,7 @@ export default function SignupPage() {
             type="email"
             name="email"
             placeholder="Email"
+            value = {form.email}
             className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             onChange={handleChange}
           />
@@ -65,6 +76,23 @@ export default function SignupPage() {
             type="password"
             name="password"
             placeholder="Password"
+            value = {form.password}
+            className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            onChange={handleChange}
+          />
+          <input
+            type="text"
+            name="profilePic"
+            placeholder="Profile Pic"
+            value = {form.profilePic}
+            className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            onChange={handleChange}
+          />
+          <input
+            type="text"
+            name="About"
+            placeholder="About"
+            value = {form.About}
             className="rounded-md border border-border bg-input px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             onChange={handleChange}
           />

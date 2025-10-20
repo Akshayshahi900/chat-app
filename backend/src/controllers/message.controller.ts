@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
+import cloudinary from "../lib/cloudinary";
 
 const prisma = new PrismaClient();
 
@@ -7,6 +8,98 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
+// export const uploadFile = async(req:Request , res:Response) => {
+//   try {
+//     if(!req.file) return res.status(400).json({message: "No file uploaded"});
+
+//     const file = req.file;
+
+//     //upload to cloudinary
+//     const uploadResult = await cloudinary.uploader.upload_stream(
+//       {
+//         resource_type:"auto",
+//         folder:"chat_uploads"
+//       },
+//       (error , result) =>{
+//         if (error){
+//           console.error("Cloudinary upload error:", error);
+//           return res.status(500).json({message: "Cloudinary upload failed"});
+//         }
+//         res.status(200).json({
+//           url:result?.secure_url,
+//           public_id:result?.public_id,
+//           type:file.mimetype.split("/")[0],
+//           name:file.originalname,
+//           size:file.size,
+//         })
+//       }
+  
+//       )
+
+//       uploadResult.end(file.buffer);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({message:"File upload failed"});
+//   }
+// }
+//================================
+export const uploadFile = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const file = req.file;
+
+    // Create upload stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "auto", // auto-detect image/video/raw
+        folder: "chat_uploads",
+      },
+      (error, result) => {
+        if (error || !result) {
+          console.error("Cloudinary upload error:", error);
+          return res.status(500).json({ message: "Cloudinary upload failed" });
+        }
+
+        // Detect type (image / video / file)
+        const type =
+          file.mimetype.startsWith("image")
+            ? "image"
+            : file.mimetype.startsWith("video")
+            ? "video"
+            : "file";
+
+        // Send response back
+        res.status(200).json({
+          url: result.secure_url,
+          public_id: result.public_id,
+          type,
+          name: file.originalname,
+          size: file.size,
+        });
+      }
+    );
+
+    // Write file buffer to Cloudinary stream
+    uploadStream.end(file.buffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "File upload failed" });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+//===================================
 export const getRoomMessages = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;

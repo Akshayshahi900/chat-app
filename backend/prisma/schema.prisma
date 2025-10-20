@@ -37,13 +37,12 @@ model Message {
   timestamp   DateTime @default(now())
   status      String   @default("sent") // sent, delivered, read
 
-
   // Media fields (add these)
-  fileUrl     String?  // Cloudinary URL
-  fileName    String?  // Original file name
-  fileSize    Int?     // File size in bytes
-  thumbnailUrl String? // For videos - preview image
-  
+  fileUrl  String? // Cloudinary URL
+  fileType String?
+  fileName String? // Original file name
+  fileSize Int? // File size in bytes
+  // For videos - preview image
 
   // Relations
   sender   User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
@@ -64,7 +63,7 @@ model ChatRoom {
 
   //Relations
   ChatRoomUser ChatRoomUser[]
-  lastMessage Message?       @relation(fields: [lastMessageId], references: [id], onDelete: Cascade)
+  lastMessage  Message?       @relation(fields: [lastMessageId], references: [id], onDelete: Cascade)
 
   @@index([lastActivity]) //for fast sorting
   @@map("chat_rooms")
