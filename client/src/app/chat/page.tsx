@@ -240,18 +240,7 @@ export default function ChatApp() {
     setSearchQuery("");
   };
 
-  // Send message
-  // const sendMessage = () => {
-  //   if (socket && selectedChat && newMessage.trim()) {
-  //     socket.emit("message:send", {
-  //       receiverId: selectedChat.user.id,
-  //       content: newMessage,
-  //     });
-  //     setNewMessage("");
-  //   }
-  // };
 
-  // ------------------------------
 const sendMessage = (customMessage?: {
   messageType?: string;
   content?: string;
@@ -287,49 +276,6 @@ const sendMessage = (customMessage?: {
   }
 };
 
-// --- Handle File Upload + Send ---
-// const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-//   const file = e.target.files?.[0];
-//   if (!file) return;
-//   if (file.size > 10 * 1024 * 1024) {
-//     alert("File size must be less than 10MB");
-//     return;
-//   }
-
-//   try {
-//     const formData = new FormData();
-//     formData.append("file", file);
-
-//     const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/upload`, {
-//       method: "POST",
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: formData,
-//     });
-
-//     const data = await res.json();
-//     if (!res.ok) {
-//       alert(data.message || "Upload failed");
-//       return;
-//     }
-
-//     // Send via socket after successful upload
-//     sendMessage({
-//       type: data.type.startsWith("image")
-//         ? "image"
-//         : data.type.startsWith("video")
-//         ? "video"
-//         : "file",
-//       content: data.url,
-//       fileName: data.name,
-//       fileSize: data.size,
-//     });
-//   } catch (err) {
-//     console.error("File upload error:", err);
-//     alert("File upload failed");
-//   }
-// };
 
 const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -382,34 +328,7 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       sendMessage();
     }
   };
-  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-  //   if (file.size > 10 * 1024 * 1024) {
-  //     alert("File size must be less than 10MB");
-  //     return;
-  //   }
-  //   const formdata = new FormData();
-  //   formdata.append("file", file);
 
-  //   const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/messages/upload`, {
-  //     method: "POST",
-  //     headers: {
-  //       Authorization: `Bearer ${token}`
-  //     }
-  //     ,
-  //     body: formdata
-  //   });
-
-  //   const data = await res.json();
-  //   if(res.ok){
-  //     sendMessage({
-  //       type: "file",
-  //       content: data.url,
-  //       sender: user
-  //     });
-  //   }
-  // }
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100">
