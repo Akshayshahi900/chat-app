@@ -74,10 +74,10 @@ export default function LoginPage() {
         
         {/* Optional: Add a link to signup page */}
         <p className="text-center mt-4 text-gray-400">
-          Don't have an account?{" "}
+          Don&apos;t have an account?
           <button 
             onClick={() => router.push("/signup")}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline mx-2"
           >
             Sign up
           </button>

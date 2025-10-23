@@ -9,7 +9,8 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   'user:online': () => void;
   'user:search': (data: { username: string }) => void;
-  'message:send': (data: { 
+  'message:send': (data: {
+    messageType: string; 
     receiverId: string; 
     content: string; 
   }) => void;
@@ -57,4 +58,15 @@ export interface User {
   email: string;
   profilePic?: string;
   About?: string;
+}
+
+
+export interface MessageReceivedPayload {
+  receiverId: string;
+  content?: string;
+  messageType?: 'text' | 'image' | 'video' | 'file';
+  fileUrl?: string | null;
+  fileType?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
 }

@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Mail, AtSign, Edit2, X } from "lucide-react";
-
+import Image from "next/image";
 interface ProfileProps {
   isCollapsed: boolean;
 }
-
+interface UserType{
+  id:string;
+  name:string;
+  username:string;
+  profilePic?:string | null;
+  email:string;
+}
 export default function Profile({ isCollapsed }: ProfileProps) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserType|null>(null);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

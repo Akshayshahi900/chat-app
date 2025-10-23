@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
-import { User, Message, Chat } from "../../../shared/types";
+import {Chat } from "../../../shared/types";
 import { Loader } from "lucide-react";
+import Image from "next/image";
 
 interface ChatListProps {
   token?: string | null;

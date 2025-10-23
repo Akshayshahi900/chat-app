@@ -1,9 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Mail, AtSign, Edit2, X } from "lucide-react";
+import Image from "next/image";
+// import { User } from "../../../../shared/types";
 
-export default function SidebarProfile({ isCollapsed }: any) {
+export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{ isCollapsed: boolean }>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);

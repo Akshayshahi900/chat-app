@@ -6,6 +6,8 @@ export interface User {
   profilePic?: string | null;
   About?: string | null;
   isOnline?: boolean;
+  email: string;
+  password: string;
 }
 
 export interface Message {

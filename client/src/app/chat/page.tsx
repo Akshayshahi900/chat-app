@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Menu, X, Search, Zap } from "lucide-react";
+import { Menu, X, Search} from "lucide-react";
 import ChatList from "@/components/ChatList";
 import { User, Message, Chat } from "../../../../shared/types"
 import Messages from "@/components/Messages";
@@ -11,6 +11,7 @@ import Profile from "@/components/Profile";
 export default function ChatApp() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  void isConnected;
   const [token, setToken] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
