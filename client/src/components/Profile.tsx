@@ -3,21 +3,27 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Mail, AtSign, Edit2, X } from "lucide-react";
 import Image from "next/image";
+import { profile } from "console";
+import { set } from "date-fns";
 // import { User } from "../../../../shared/types";
 
-export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{ isCollapsed: boolean }>) {
+export default function SidebarProfile({ isCollapsed }: React.PropsWithChildren<{ isCollapsed: boolean }>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    profilePic: "", // this to store cloudinary url
     name: "",
-    username: "",
-    email: "",
+    About: "",
   });
   const [saving, setSaving] = useState(false);
-
+  const [isUploading , setIsUploading] = useState(false);
+  const [isSubmitting , setIsSubmitting] = useState(false);
+  const [message ,setMessage] = useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -33,8 +39,8 @@ export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{
         setUser(data.user);
         setFormData({
           name: data.user.name || "",
-          username: data.user.username || "",
-          email: data.user.email || "",
+          About: data.user.About || "",
+          profilePic: data.user.profilePic || "",
         });
         setLoading(false);
       })
@@ -44,6 +50,126 @@ export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{
       });
   }, []);
 
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) throw new Error('Upload failed');
+    const data = await response.json();
+    return data.secure_url;
+  }
+
+  const updateProfileAPI = async (profileData :{
+    name:string;
+    About:string;
+    profilePic:string;
+  })=>{
+    const response = await fetch (`${process.env.NeXT_PUBLIC_SERVER_URL}/api/profile/update`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(profileData),
+    
+    });
+    if (!response.ok) {
+      throw new Error('Profile update failed');
+    }
+    return response.json();
+  }
+
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if(!file) return;
+
+    // validation for file type
+    if(!file.type.startsWith("image/")){
+      setMessage("Please select a valid image file.");
+      return;
+    }
+
+    //validatioin file size(max 5mb)
+    if(file.size > 5 * 1024 * 1024){
+      setMessage("File size should be less than 5MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    setMessage("");
+
+    try{
+      const cloudinaryUrl = await uploadToCloudinary(file);
+      setFormData((prev => ({...prev, profilePic: cloudinaryUrl})));
+      setMessage("Image uploaded successfully.");
+    }
+    catch(error){
+      console.error("Upload failed:", error);
+      setMessage("Image upload failed. Please try again.");
+    }
+    finally{
+      setIsUploading(false);
+    }
+  };
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const {name , value } = e.target;
+    setFormData((prev) => ({...prev, [name]: value}));
+    setMessage(""); //clear message on input change
+  };
+
+
+  const handleSubmit = async (e:React.FormEvent) =>{
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage("");
+
+    try{
+      const backendData ={
+        name:formData.name,
+        About:formData.About,
+        profilePic:formData.profilePic,
+      };
+
+      //validate required fields 
+      if(!backendData.name || !backendData.About || !backendData.profilePic){
+        setMessage("All fields are required.");
+        setIsSubmitting(false);
+        return;
+      }
+      const result = await updateProfileAPI(backendData);
+      setMessage("Profile updated successfully.");
+
+      console.log("Profile updated:", result.user);
+
+
+    }
+    catch(error){
+      console.error("Profile update failed:", error);
+      setMessage(error instanceof Error ? error.message : "Profile update failed. Please try again.");
+    }
+    finally{
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel =() =>{
+    setFormData({
+      profilePic:'',
+      name:'',
+      About:'',
+    });
+    setMessage("Changes discarded.");
+  }
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
@@ -55,7 +181,7 @@ export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/update`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/profile/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -141,9 +267,8 @@ export default function SidebarProfile({ isCollapsed }:React.PropsWithChildren<{
                 <p className="text-xs text-gray-400 truncate">{user.email}</p>
               </div>
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

@@ -18,6 +18,8 @@ import { setupSocketHandlers } from "./sockets/socketHandlers";
 
 // Import environment variables
 import dotenv from "dotenv";
+import { profile } from "console";
+import profileRoutes from "./routes/profile.routes";
 dotenv.config();
 
 const app = express();
@@ -45,6 +47,7 @@ app.use(cors(CORS_OPTIONS));
 app.use('/api/auth', authRoutes);
 app.use('/api/chats' , chatRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Health check route
 app.get("/api/health", (req: express.Request, res: express.Response) => {

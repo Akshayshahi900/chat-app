@@ -58,14 +58,7 @@ const Messages: React.FC<MessagesProps> = ({
               className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 bg-gray-950 custom-scrollbar"
               onScroll={handleScroll}
             >
-              {/* Load More Indicator */}
               {isLoadingMore && (
-                // <div className="flex justify-center py-2">
-                //   <div className="text-gray-400 text-xs sm:text-sm flex items-center gap-2">
-                //     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                //     Loading older messages...
-                //   </div>
-                // </div>
                 <Loader2 />
               )}
 
