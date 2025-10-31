@@ -10,6 +10,10 @@ export interface ClientToServerEvents {
   'user:online': () => void;
   'user:search': (data: { username: string }) => void;
   'message:send': (data: {
+    fileUrl: null;
+    fileSize: null;
+    fileType: null;
+    fileName: null;
     messageType: string; 
     receiverId: string; 
     content: string; 
