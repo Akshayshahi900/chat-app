@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Mail, AtSign, Edit2, X } from "lucide-react";
-import Image from "next/image";
 interface ProfileProps {
   isCollapsed: boolean;
 }

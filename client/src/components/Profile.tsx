@@ -2,10 +2,18 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Mail, AtSign, Edit2, X } from "lucide-react";
-import Image from "next/image";
+// import Image from "next/image";
 
+interface User{
+  id:string,
+  email:string, 
+  username:string,
+  name:string,
+  profilePic:string,
+  About:string,
+}
 export default function SidebarProfile({ isCollapsed }: React.PropsWithChildren<{ isCollapsed: boolean }>) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User| null>(null);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

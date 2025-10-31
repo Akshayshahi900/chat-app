@@ -4,7 +4,6 @@ import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 import {Chat } from "../../../shared/types";
 import { Loader } from "lucide-react";
-import Image from "next/image";
 
 interface ChatListProps {
   token?: string | null;

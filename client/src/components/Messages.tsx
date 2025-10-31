@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessagesProps } from '../../../shared/messages';
 import { Loader2, Paperclip } from 'lucide-react';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 const Messages: React.FC<MessagesProps> = ({
   selectedChat,
