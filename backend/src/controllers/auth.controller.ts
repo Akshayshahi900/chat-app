@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { 
-  CreateUserDto, 
-  LoginCredentials, 
-  AuthResponse, 
-  LoginResponse, 
+import {
+  CreateUserDto,
+  LoginCredentials,
+  AuthResponse,
+  LoginResponse,
   AuthRequest,
   SafeUser
 } from '../types/auth';
@@ -16,6 +16,10 @@ const prisma = new PrismaClient();
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Disable caching for auth responses
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const { name, username, email, password, profilePic, About }: CreateUserDto = req.body;
 
     // Validation
@@ -25,8 +29,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check if user already exists by email
-    const existingUserByEmail = await prisma.user.findUnique({ 
-      where: { email } 
+    const existingUserByEmail = await prisma.user.findUnique({
+      where: { email }
     });
     if (existingUserByEmail) {
       res.status(400).json({ message: "Email already exists" });
@@ -34,8 +38,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check if username is taken
-    const existingUserByUsername = await prisma.user.findUnique({ 
-      where: { username } 
+    const existingUserByUsername = await prisma.user.findUnique({
+      where: { username }
     });
     if (existingUserByUsername) {
       res.status(400).json({ message: "Username already taken" });
@@ -43,12 +47,12 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_CONFIG.saltRounds);
-    
+
     const user = await prisma.user.create({
-      data: { 
-        name, 
-        username, 
-        email, 
+      data: {
+        name,
+        username,
+        email,
         password: hashedPassword,
         profilePic: profilePic || null,
         About: About || null
@@ -73,9 +77,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(response);
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: (error as Error).message 
+    res.status(500).json({
+      message: "Internal server error",
+      error: (error as Error).message
     });
   }
 };
@@ -90,7 +94,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
@@ -102,7 +106,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         profilePic: true
       }
     });
-    
+
     if (!user) {
       res.status(400).json({ message: "Invalid credentials" });
       return;
@@ -115,7 +119,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = generateToken({ id: user.id });
-    
+
     // Create SafeUser without password
     const safeUser: SafeUser = {
       id: user.id,
@@ -125,7 +129,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       About: user.About || undefined,
       profilePic: user.profilePic || undefined
     };
-    
+
     const response: LoginResponse = {
       token,
       user: safeUser
@@ -134,9 +138,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.json(response);
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: (error as Error).message 
+    res.status(500).json({
+      message: "Internal server error",
+      error: (error as Error).message
     });
   }
 };
@@ -169,9 +173,9 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.json({ user: user as SafeUser });
   } catch (error) {
     console.error('Get me error:', error);
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: (error as Error).message 
+    res.status(500).json({
+      message: "Internal server error",
+      error: (error as Error).message
     });
   }
 };
