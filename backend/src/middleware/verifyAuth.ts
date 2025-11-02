@@ -1,11 +1,11 @@
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, RequestHandler } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { AuthRequest, SafeUser } from '../types/auth';
+import { SafeUser } from '../types/auth';
 import { verifyToken } from '../utils/jwt';
 
 const prisma = new PrismaClient();
 
-export const verifyAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const verifyAuth:RequestHandler = async (req, res, next): Promise<void> => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

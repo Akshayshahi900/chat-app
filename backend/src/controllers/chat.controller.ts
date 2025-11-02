@@ -4,10 +4,7 @@ import { Request, Response } from "express";
 const prisma = new PrismaClient();
 
 
-interface AuthRequest extends Request {
-  user?: any;
-}
-export const getChatList = async (req: AuthRequest, res: Response) => {
+export const getChatList = async (req: Request, res: Response) => {
   try {
     const userId = req.user.id;
 

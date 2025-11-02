@@ -4,9 +4,6 @@ import cloudinary from "../lib/cloudinary";
 
 const prisma = new PrismaClient();
 
-interface AuthRequest extends Request {
-  user?: any;
-}
 
 // export const uploadFile = async(req:Request , res:Response) => {
 //   try {
@@ -100,7 +97,7 @@ export const uploadFile = async (req: Request, res: Response) => {
 
 
 //===================================
-export const getRoomMessages = async (req: AuthRequest, res: Response) => {
+export const getRoomMessages = async (req: Request, res: Response) => {
   try {
     const userId = req.user.id;
     const { roomId } = req.params;

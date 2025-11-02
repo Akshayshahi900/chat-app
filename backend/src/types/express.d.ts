@@ -1,8 +1,11 @@
 import { JwtPayload } from 'jsonwebtoken';
-
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: string | JwtPayload;
-    file?: Express.Multer.File;
+import { Multer } from 'multer';  
+declare global{
+  namespace Express{
+    interface Request{
+      user?:SafeUser;
+      file?: Express.Multer.File;
+    }
   }
 }
+export {};

@@ -6,7 +6,6 @@ import {
   LoginCredentials,
   AuthResponse,
   LoginResponse,
-  AuthRequest,
   SafeUser
 } from '../types/auth';
 import { BCRYPT_CONFIG } from '../utils/constants';
@@ -145,7 +144,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ message: "User not authenticated" });

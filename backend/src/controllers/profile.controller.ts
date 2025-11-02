@@ -2,11 +2,9 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-import {
-    AuthRequest,
-} from '../types/auth';
 
-export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.user) {
             res.status(401).json({ message: "User not authenticated" });

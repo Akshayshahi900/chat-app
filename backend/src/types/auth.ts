@@ -54,7 +54,3 @@ export interface JwtPayload {
   iat?: number;
   exp?: number;
 }
-
-export interface AuthRequest extends Request {
-  user?: SafeUser; // Use SafeUser here instead of User
-}
