@@ -1,20 +1,11 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // binaryTargets = ["native", "linux-musl-openssl-3.0.x"] for alpine
+  binaryTargets = ["native", "debian-openssl-1.1.x"]//  for debian-based
 }
 
 datasource db {
   provider = "mongodb"
-  // NOTE:
-  // Prisma CLI resolves env("DATABASE_URL") from a .env file in the schema/project root by default.
-  // It does NOT automatically load Next.js's .env.local. If your DATABASE_URL is only in .env.local:
-  //  - Option A (recommended): copy the variable into a .env at the project root (gitignore .env).
-  //  - Option B: install dotenv-cli (yarn add -D dotenv-cli) and run Prisma commands with it:
-  //      dotenv -e .env.local -- prisma generate
-  //    then add a package.json script and run via yarn.
-  //  - Option C: export DATABASE_URL in your shell or use cross-env in scripts.
-  //
-  // At runtime Next.js will load .env.local for server-side code, so the runtime client can still use DATABASE_URL.
   url      = env("DATABASE_URL")
 }
 
