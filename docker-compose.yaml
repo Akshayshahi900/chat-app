@@ -1,28 +1,4 @@
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: ./backend/Dockerfile
-    container_name: chat-backend
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - mongo
-    networks:
-      - chatnet
-  client:
-    build:
-      context: .
-      dockerfile: ./client/Dockerfile
-    container_name: chat-client
-    ports:
-      - "3000:3000"
-    networks:
-      - chatnet
-    depends_on:
-      - backend
   mongo:
     image: mongo:7.0
     container_name: chat-mongo
@@ -34,9 +10,43 @@ services:
       - mongo-data:/data/db
     networks:
       - chatnet
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'try { rs.status().ok || rs.initiate({_id:\"rs0\", members:[{_id:0, host:\"chat-mongo:27017\"}]}); } catch (e) { rs.initiate({_id:\"rs0\", members:[{_id:0, host:\"chat-mongo:27017\"}]}); }'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: chat-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - chatnet
+
+  client:
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+    container_name: chat-client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - chatnet
+
 networks:
   chatnet:
-
 
 volumes:
   mongo-data:
