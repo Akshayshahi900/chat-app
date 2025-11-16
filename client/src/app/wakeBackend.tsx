@@ -1,6 +1,7 @@
+"use client";
 import React, { useEffect, useState } from 'react'
 
-export default function wakeBackend({ children }: { children: React.ReactNode }){
+export default function WakeBackend({ children }: { children: React.ReactNode }){
     const [ready, setReady] = useState(false);
     useEffect(() => {
         async function wake() {
@@ -8,7 +9,7 @@ export default function wakeBackend({ children }: { children: React.ReactNode })
                 await fetch(`$process.env.NEXT_PUBLIC_SERVER_URL}/api/health`, {
                     cache: "no-store",
                 });
-            } catch (err) {
+            } catch {
                 console.log("Backend Waking Up...");
             }
             finally {

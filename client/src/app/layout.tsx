@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css"
-import { Suspense } from "react";
 import WakeBackend from "./wakeBackend";
+// import { Suspense } from "react";
 
 
 export const metadata: Metadata = {

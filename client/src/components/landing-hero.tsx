@@ -10,8 +10,7 @@ export default function LandingHero() {
             Chat in real time. Simple. Secure. Fast.
           </h1>
           <p className="text-muted-foreground leading-relaxed md:text-lg">
-            Connect instantly with friends. Low-latency rooms, media sharing, and presence – all in a
-            clean, modern UI.
+            Connect instantly with friends. Low-latency rooms, media sharing, and presence all in a clean, modern UI.
           </p>
           <div className="flex items-center gap-3">
             <Button asChild size="lg">
