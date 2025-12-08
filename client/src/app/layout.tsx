@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   description: "A Real Time Chat Application",
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
